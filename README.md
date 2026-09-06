@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Intelligent Data Quality & Anomaly Detection Platform
 
 ## Overview
@@ -63,3 +64,61 @@ The project is being developed step-by-step, starting with data ingestion, profi
 **Shubham Chavan**
 
 GitHub: https://github.com/Shubham479927
+=======
+\# Intelligent Data Quality \& Anomaly Detection Platform
+
+
+
+An end-to-end platform for detecting data quality issues and
+
+machine-learning-based anomalies in structured datasets.
+
+
+
+\## Project Goals
+
+
+
+\- Automatically profile datasets
+
+\- Detect data quality issues
+
+\- Clean and quarantine invalid records
+
+\- Detect anomalies using machine learning
+
+\- Store processed data in a database
+
+\- Automate data pipelines
+
+\- Provide dashboards and reports
+
+
+
+\## Technologies
+
+
+
+\- Python
+
+\- Pandas
+
+\- NumPy
+
+\- Scikit-learn
+
+\- SQL
+
+\- MySQL/PostgreSQL
+
+\- Airflow
+
+\- Streamlit
+
+\- Power BI
+
+\- Docker
+
+\- Git \& GitHub
+
+>>>>>>> b34fedb (Add project documentation and package structure)
