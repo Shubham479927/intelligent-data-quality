@@ -1,0 +1,81 @@
+{
+    "total_rows": 1020,
+    "total_columns": 10,
+    "missing_values": {
+        "order_id": {
+            "missing_count": 0,
+            "status": "PASS"
+        },
+        "customer_id": {
+            "missing_count": 0,
+            "status": "PASS"
+        },
+        "order_date": {
+            "missing_count": 0,
+            "status": "PASS"
+        },
+        "product_category": {
+            "missing_count": 0,
+            "status": "PASS"
+        },
+        "quantity": {
+            "missing_count": 0,
+            "status": "PASS"
+        },
+        "unit_price": {
+            "missing_count": 0,
+            "status": "PASS"
+        },
+        "total_amount": {
+            "missing_count": 0,
+            "status": "PASS"
+        },
+        "payment_method": {
+            "missing_count": 0,
+            "status": "PASS"
+        },
+        "customer_age": {
+            "missing_count": 0,
+            "status": "PASS"
+        },
+        "customer_email": {
+            "missing_count": 50,
+            "status": "FAIL"
+        }
+    },
+    "duplicates": {
+        "count": 19,
+        "status": "FAIL"
+    },
+    "range_validation": {
+        "quantity": {
+            "invalid_count": 10,
+            "status": "FAIL"
+        },
+        "unit_price": {
+            "invalid_count": 10,
+            "status": "FAIL"
+        },
+        "customer_age": {
+            "invalid_count": 10,
+            "status": "FAIL"
+        }
+    },
+    "format_validation": {
+        "customer_email": {
+            "invalid_count": 60,
+            "status": "FAIL"
+        },
+        "order_date": {
+            "invalid_count": 10,
+            "status": "FAIL"
+        }
+    },
+    "schema_validation": {
+        "missing_columns": [],
+        "unexpected_columns": [],
+        "status": "PASS"
+    },
+    "quality_score": 58.82,
+    "overall_status": "FAIL"
+}

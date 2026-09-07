@@ -1,0 +1,68 @@
+{
+    "rows": 4,
+    "columns": 5,
+    "columns_info": [
+        {
+            "column": "id",
+            "data_type": "int64",
+            "missing_values": 0,
+            "unique_values": 4,
+            "column_type": "numeric",
+            "min": "1",
+            "max": "4",
+            "mean": 2.5,
+            "median": 2.5,
+            "std": 1.29
+        },
+        {
+            "column": "name",
+            "data_type": "str",
+            "missing_values": 0,
+            "unique_values": 4,
+            "column_type": "categorical",
+            "top_values": {
+                "Amit": 1,
+                "Rohit": 1,
+                "Priya": 1,
+                "Neha": 1
+            }
+        },
+        {
+            "column": "age",
+            "data_type": "float64",
+            "missing_values": 1,
+            "unique_values": 3,
+            "column_type": "numeric",
+            "min": 25.0,
+            "max": 30.0,
+            "mean": 27.67,
+            "median": 28.0,
+            "std": 2.52
+        },
+        {
+            "column": "salary",
+            "data_type": "int64",
+            "missing_values": 0,
+            "unique_values": 4,
+            "column_type": "numeric",
+            "min": "35000",
+            "max": "60000",
+            "mean": 48750.0,
+            "median": 50000.0,
+            "std": 11086.78
+        },
+        {
+            "column": "city",
+            "data_type": "str",
+            "missing_values": 0,
+            "unique_values": 3,
+            "column_type": "categorical",
+            "top_values": {
+                "Pune": 2,
+                "Mumbai": 1,
+                "Delhi": 1
+            }
+        }
+    ],
+    "duplicate_rows": 0
+}

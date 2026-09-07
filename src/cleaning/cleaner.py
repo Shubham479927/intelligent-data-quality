@@ -19,6 +19,7 @@ def clean_dataset(df):
         | (~cleaned_df["customer_email"].fillna("").str.match(
             r"^[\w\.-]+@[\w\.-]+\.\w+$"
         ))
+        | (pd.to_datetime(cleaned_df["order_date"], errors="coerce").isna())
     )
 
     # Separate invalid records
