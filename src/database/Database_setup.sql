@@ -18,3 +18,39 @@ CREATE TABLE orders (
 );
 
 show tables;
+
+SELECT COUNT(*) FROM orders;
+
+SELECT * FROM orders
+LIMIT 10;
+
+SELECT COUNT(*) AS total_orders
+FROM orders;
+
+SELECT
+    MIN(order_date) AS earliest_date,
+    MAX(order_date) AS latest_date,
+    MIN(quantity) AS minimum_quantity,
+    MIN(unit_price) AS minimum_price
+FROM orders;
+
+CREATE INDEX idx_customer_id
+ON orders(customer_id);
+
+CREATE INDEX idx_order_date
+ON orders(order_date);
+
+SHOW INDEX FROM orders;
+
+SELECT COUNT(*) AS total_orders
+FROM orders;
+
+CREATE TABLE anomaly_results (
+    order_id INT PRIMARY KEY,
+    anomaly_prediction INT,
+    anomaly_score DECIMAL(10,6),
+    anomaly_status VARCHAR(20),
+    FOREIGN KEY (order_id) REFERENCES orders(order_id)
+);
+
+
