@@ -1,10 +1,11 @@
 import pandas as pd
 import json
+from pathlib import Path
 
 
 def validate_dataset(df):
     """
-    Run data quality validation checks on a dataset.
+    Run generic data quality validation checks on a dataset.
     """
 
     results = {}
@@ -12,160 +13,172 @@ def validate_dataset(df):
     results["total_rows"] = len(df)
     results["total_columns"] = len(df.columns)
 
-    # Missing value validation
+    # 1. Missing Value Validation
+
     missing_results = {}
 
     for column in df.columns:
-        missing_count = int(df[column].isna().sum())
 
-        if missing_count > 0:
-            status = "FAIL"
-        else:
-            status = "PASS"
+        missing_count = int(df[column].isna().sum())
 
         missing_results[column] = {
             "missing_count": missing_count,
-            "status": status
+            "status": "FAIL" if missing_count > 0 else "PASS"
         }
 
     results["missing_values"] = missing_results
 
-    # Duplicate validation
+    # 2. Duplicate Validation
+
     duplicate_count = int(df.duplicated().sum())
 
     results["duplicates"] = {
         "count": duplicate_count,
         "status": "FAIL" if duplicate_count > 0 else "PASS"
     }
-    
-        # Range validation
+
+    # 3. Numeric Range Validation
+
     range_results = {}
 
-    # Quantity validation
-    invalid_quantity = int((df["quantity"] <= 0).sum())
+    numeric_columns = df.select_dtypes(
+        include=["number"]
+    ).columns
 
-    range_results["quantity"] = {
-        "invalid_count": invalid_quantity,
-        "status": "FAIL" if invalid_quantity > 0 else "PASS"
-    }
+    for column in numeric_columns:
 
-    # Unit price validation
-    invalid_price = int((df["unit_price"] <= 0).sum())
+        column_lower = column.lower()
 
-    range_results["unit_price"] = {
-        "invalid_count": invalid_price,
-        "status": "FAIL" if invalid_price > 0 else "PASS"
-    }
+        # Ignore ID/code columns
+        if any(
+            keyword in column_lower
+            for keyword in ["id", "code", "zip", "postal"]
+        ):
+            continue
 
-    # Customer age validation
-    invalid_age = int(
-        ((df["customer_age"] < 18) | (df["customer_age"] > 100)).sum()
-    )
+        invalid_count = int((df[column] < 0).sum())
 
-    range_results["customer_age"] = {
-        "invalid_count": invalid_age,
-        "status": "FAIL" if invalid_age > 0 else "PASS"
-    }
+        range_results[column] = {
+            "invalid_count": invalid_count,
+            "status": "FAIL" if invalid_count > 0 else "PASS"
+        }
 
     results["range_validation"] = range_results
-    
-        # Format validation
+
+    # 4. Format Validation
+
     format_results = {}
 
-    # Email validation
-    email_pattern = r"^[\w\.-]+@[\w\.-]+\.\w+$"
+    for column in df.columns:
 
-    invalid_email = int(
-        (~df["customer_email"].fillna("").str.match(email_pattern)).sum()
-    )
+        column_lower = column.lower()
 
-    format_results["customer_email"] = {
-        "invalid_count": invalid_email,
-        "status": "FAIL" if invalid_email > 0 else "PASS"
-    }
+        # Email validation
 
-    # Date validation
-    converted_dates = pd.to_datetime(
-        df["order_date"],
-        errors="coerce"
-    )
+        if "email" in column_lower:
 
-    invalid_dates = int(converted_dates.isna().sum())
+            email_pattern = r"^[\w\.-]+@[\w\.-]+\.\w+$"
 
-    format_results["order_date"] = {
-        "invalid_count": invalid_dates,
-        "status": "FAIL" if invalid_dates > 0 else "PASS"
-    }
+            non_missing_values = (
+                df[column]
+                .dropna()
+                .astype(str)
+            )
+
+            invalid_count = int(
+                (~non_missing_values.str.match(email_pattern)).sum()
+            )
+
+            format_results[column] = {
+                "invalid_count": invalid_count,
+                "status": "FAIL" if invalid_count > 0 else "PASS"
+            }
+
+        # Date validation
+
+        elif any(
+            keyword in column_lower
+            for keyword in ["date", "time", "timestamp"]
+        ):
+
+            converted_values = pd.to_datetime(
+                df[column],
+                errors="coerce"
+            )
+
+            invalid_count = int(
+                converted_values.isna().sum()
+            )
+
+            format_results[column] = {
+                "invalid_count": invalid_count,
+                "status": "FAIL" if invalid_count > 0 else "PASS"
+            }
 
     results["format_validation"] = format_results
-    
-        # Schema validation
-    expected_columns = [
-        "order_id",
-        "customer_id",
-        "order_date",
-        "product_category",
-        "quantity",
-        "unit_price",
-        "total_amount",
-        "payment_method",
-        "customer_age",
-        "customer_email"
-    ]
+
+    # 5. Schema Validation
 
     actual_columns = list(df.columns)
 
-    missing_columns = [
-        column for column in expected_columns
-        if column not in actual_columns
-    ]
-
-    unexpected_columns = [
-        column for column in actual_columns
-        if column not in expected_columns
-    ]
-
     schema_status = (
         "PASS"
-        if not missing_columns and not unexpected_columns
+        if len(actual_columns) > 0
         else "FAIL"
     )
 
     results["schema_validation"] = {
-        "missing_columns": missing_columns,
-        "unexpected_columns": unexpected_columns,
+        "columns": actual_columns,
         "status": schema_status
     }
-    
-        # Overall data quality score
+
+    # 6. Overall Data Quality Score
 
     checks = []
 
     # Missing value checks
+
     for result in results["missing_values"].values():
-        checks.append(result["status"] == "PASS")
+        checks.append(
+            result["status"] == "PASS"
+        )
 
     # Duplicate check
-    checks.append(results["duplicates"]["status"] == "PASS")
+
+    checks.append(
+        results["duplicates"]["status"] == "PASS"
+    )
 
     # Range checks
+
     for result in results["range_validation"].values():
-        checks.append(result["status"] == "PASS")
+        checks.append(
+            result["status"] == "PASS"
+        )
 
     # Format checks
+
     for result in results["format_validation"].values():
-        checks.append(result["status"] == "PASS")
+        checks.append(
+            result["status"] == "PASS"
+        )
 
     # Schema check
-    checks.append(results["schema_validation"]["status"] == "PASS")
+
+    checks.append(
+        results["schema_validation"]["status"] == "PASS"
+    )
 
     passed_checks = sum(checks)
     total_checks = len(checks)
 
-    quality_score = round(
-        (passed_checks / total_checks) * 100,
-        2
-    )
+    if total_checks > 0:
+        quality_score = round(
+            (passed_checks / total_checks) * 100,
+            2
+        )
+    else:
+        quality_score = 0.0
 
     overall_status = (
         "PASS"
@@ -175,9 +188,39 @@ def validate_dataset(df):
 
     results["quality_score"] = quality_score
     results["overall_status"] = overall_status
-    
+
     return results
 
+
+def save_validation_report(
+    results,
+    output_path="data/validation_report.json"
+):
+    """
+    Save validation results as a JSON report.
+    """
+
+    output_path = Path(output_path)
+
+    output_path.parent.mkdir(
+        parents=True,
+        exist_ok=True
+    )
+
+    with open(output_path, "w") as file:
+        json.dump(
+            results,
+            file,
+            indent=4
+        )
+
+    print(
+        "\nValidation report saved to:",
+        output_path
+    )
+
+
+# Standalone Testing
 
 if __name__ == "__main__":
 
@@ -189,12 +232,20 @@ if __name__ == "__main__":
 
     print("\n===== DATA QUALITY VALIDATION =====")
 
-    print("Total rows:", results["total_rows"])
-    print("Total columns:", results["total_columns"])
+    print(
+        "Total rows:",
+        results["total_rows"]
+    )
+
+    print(
+        "Total columns:",
+        results["total_columns"]
+    )
 
     print("\n===== MISSING VALUE CHECK =====")
 
     for column, result in results["missing_values"].items():
+
         print(
             f"{column}: "
             f"{result['missing_count']} missing → "
@@ -209,33 +260,41 @@ if __name__ == "__main__":
         "→",
         results["duplicates"]["status"]
     )
-    
+
     print("\n===== RANGE VALIDATION =====")
 
     for column, result in results["range_validation"].items():
+
         print(
             f"{column}: "
             f"{result['invalid_count']} invalid → "
             f"{result['status']}"
         )
-    
+
     print("\n===== FORMAT VALIDATION =====")
 
     for column, result in results["format_validation"].items():
+
         print(
             f"{column}: "
             f"{result['invalid_count']} invalid → "
             f"{result['status']}"
         )
-    
+
     print("\n===== SCHEMA VALIDATION =====")
 
     schema = results["schema_validation"]
 
-    print("Missing columns:", schema["missing_columns"])
-    print("Unexpected columns:", schema["unexpected_columns"])
-    print("Status:", schema["status"])
-    
+    print(
+        "Columns:",
+        schema["columns"]
+    )
+
+    print(
+        "Status:",
+        schema["status"]
+    )
+
     print("\n===== OVERALL DATA QUALITY =====")
 
     print(
@@ -248,11 +307,7 @@ if __name__ == "__main__":
         "Overall Status:",
         results["overall_status"]
     )
-    
-        # Save validation report
-    output_path = "data/validation_report.json"
 
-    with open(output_path, "w") as file:
-        json.dump(results, file, indent=4)
+    # Save Validation Report
 
-    print("\nValidation report saved to:", output_path)
+    save_validation_report(results)

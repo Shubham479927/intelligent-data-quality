@@ -53,4 +53,118 @@ CREATE TABLE anomaly_results (
     FOREIGN KEY (order_id) REFERENCES orders(order_id)
 );
 
+SELECT COUNT(*) AS total_results
+FROM anomaly_results;
+
+SHOW VARIABLES LIKE 'port';
+
+USE intelligent_data_quality;
+
+SELECT COUNT(*) FROM orders;
+
+SELECT COUNT(*) FROM anomaly_results;
+
+USE intelligent_data_quality;
+
+SELECT COUNT(*) FROM anomaly_results;
+
+select version();
+
+SELECT user, host, plugin
+FROM mysql.user
+WHERE user = 'root';
+
+CREATE USER 'powerbi_user'@'localhost'
+IDENTIFIED WITH mysql_native_password
+BY '9927';
+
+GRANT SELECT ON intelligent_data_quality.* 
+TO 'powerbi_user'@'localhost';
+
+FLUSH PRIVILEGES;
+
+SELECT user, host, plugin
+FROM mysql.user
+WHERE user = 'powerbi_user';
+
+CREATE USER 'powerbi_user'@'127.0.0.1'
+IDENTIFIED WITH mysql_native_password
+BY '9927';
+
+ALTER USER 'powerbi_user'@'127.0.0.1'
+IDENTIFIED WITH mysql_native_password
+BY '9927';
+
+GRANT SELECT ON intelligent_data_quality.*
+TO 'powerbi_user'@'127.0.0.1';
+
+CREATE USER 'metabase_user'@'localhost' IDENTIFIED BY '9927';
+
+GRANT SELECT ON intelligent_data_quality.* 
+TO 'metabase_user'@'localhost';
+
+ALTER USER 'metabase_user'@'localhost'
+IDENTIFIED WITH mysql_native_password BY 'YOUR_SAME_PASSWORD';
+
+ALTER USER 'metabase_user'@'localhost'
+IDENTIFIED WITH mysql_native_password BY '9927';
+
+FLUSH PRIVILEGES;
+
+USE intelligent_data_quality;
+
+CREATE TABLE pipeline_metrics (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    original_rows INT,
+    quarantined_rows INT,
+    duplicates_removed INT,
+    cleaned_rows INT,
+    retention_rate DECIMAL(5,2),
+    quality_score DECIMAL(5,2),
+    pipeline_status VARCHAR(20),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+DESCRIBE pipeline_metrics;
+
+INSERT INTO pipeline_metrics (
+    original_rows,
+    quarantined_rows,
+    duplicates_removed,
+    cleaned_rows,
+    retention_rate,
+    quality_score,
+    pipeline_status
+)
+VALUES (
+    1020,
+    38,
+    19,
+    963,
+    94.41,
+    66.67,
+    'FAIL'
+);
+
+SELECT * FROM pipeline_metrics;
+
+USE intelligent_data_quality;
+
+SELECT *
+FROM pipeline_metrics
+ORDER BY created_at DESC;
+
+SELECT COUNT(*) AS total_pipeline_runs
+FROM pipeline_metrics;
+
+SELECT COUNT(*) AS total_orders
+FROM orders;
+
+SELECT COUNT(*) AS total_anomaly_results
+FROM anomaly_results;
+
+SELECT anomaly_status, COUNT(*) AS count
+FROM anomaly_results
+GROUP BY anomaly_status;
+
 

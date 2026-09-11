@@ -1,6 +1,6 @@
 import pandas as pd
 from sqlalchemy import text
-from db_connection import get_engine
+from .db_connection import get_engine
 
 
 def load_data():

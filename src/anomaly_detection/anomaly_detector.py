@@ -16,17 +16,37 @@ def load_data():
 
 
 def select_features(df):
+    """
+    Automatically select suitable numeric features
+    for anomaly detection.
+    """
 
+    numeric_columns = df.select_dtypes(
+        include=["number"]
+    ).columns.tolist()
+
+    # Exclude identifier-like columns
     features = [
-        "quantity",
-        "unit_price",
-        "total_amount",
-        "customer_age"
+        column
+        for column in numeric_columns
+        if not any(
+            keyword in column.lower()
+            for keyword in ["id", "code", "zip", "postal"]
+        )
     ]
+
+    if not features:
+        raise ValueError(
+            "No suitable numeric features found "
+            "for anomaly detection."
+        )
 
     X = df[features]
 
     print("\nFeatures selected:")
+    print(features)
+
+    print("\nFeature preview:")
     print(X.head())
 
     return X

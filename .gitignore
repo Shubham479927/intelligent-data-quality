@@ -8,3 +8,6 @@ data/raw/*
 data/processed/*
 data/quarantine/*
 .DS_Store
+data/anomaly_results.csv
+data/cleaning_report.json
+data/validation_report.json
