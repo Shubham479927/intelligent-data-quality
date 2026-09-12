@@ -1,12 +1,34 @@
 import pandas as pd
 import json
+import yaml
 from pathlib import Path
 
+def load_validation_rules(
+    config_path="config/validation_rules.yaml"
+):
+    """
+    Load data validation rules from a YAML configuration file.
+    """
+
+    config_path = Path(config_path)
+
+    if not config_path.exists():
+        raise FileNotFoundError(
+            f"Validation rules file not found: {config_path}"
+        )
+
+    with open(config_path, "r") as file:
+        config = yaml.safe_load(file)
+
+    return config
 
 def validate_dataset(df):
     """
     Run generic data quality validation checks on a dataset.
     """
+
+    config = load_validation_rules()
+    rules = config.get("rules", {})
 
     results = {}
 
@@ -21,9 +43,18 @@ def validate_dataset(df):
 
         missing_count = int(df[column].isna().sum())
 
+        column_rules = rules.get(column, {})
+
+        required = column_rules.get("required", False)
+
+        if required:
+            status = "FAIL" if missing_count > 0 else "PASS"
+        else:
+            status = "PASS"
+
         missing_results[column] = {
             "missing_count": missing_count,
-            "status": "FAIL" if missing_count > 0 else "PASS"
+            "status": status
         }
 
     results["missing_values"] = missing_results
@@ -32,9 +63,22 @@ def validate_dataset(df):
 
     duplicate_count = int(df.duplicated().sum())
 
+    duplicate_rules = config.get("duplicate_check", {})
+    duplicates_allowed = duplicate_rules.get("allowed", False)
+
+    if duplicates_allowed:
+        duplicate_status = "PASS"
+    else:
+        duplicate_status = (
+            "FAIL"
+            if duplicate_count > 0
+            else "PASS"
+        )
+
     results["duplicates"] = {
         "count": duplicate_count,
-        "status": "FAIL" if duplicate_count > 0 else "PASS"
+        "allowed": duplicates_allowed,
+        "status": duplicate_status
     }
 
     # 3. Numeric Range Validation
@@ -47,16 +91,23 @@ def validate_dataset(df):
 
     for column in numeric_columns:
 
-        column_lower = column.lower()
-
-        # Ignore ID/code columns
-        if any(
-            keyword in column_lower
-            for keyword in ["id", "code", "zip", "postal"]
-        ):
+        if column not in rules:
             continue
 
-        invalid_count = int((df[column] < 0).sum())
+        column_rules = rules[column]
+
+        invalid_mask = pd.Series(
+            False,
+            index=df.index
+        )
+
+        if "min" in column_rules:
+            invalid_mask |= df[column] < column_rules["min"]
+
+        if "max" in column_rules:
+            invalid_mask |= df[column] > column_rules["max"]
+
+        invalid_count = int(invalid_mask.sum())
 
         range_results[column] = {
             "invalid_count": invalid_count,
@@ -64,6 +115,32 @@ def validate_dataset(df):
         }
 
     results["range_validation"] = range_results
+    
+    # 3.5 Allowed Values Validation
+
+    allowed_values_results = {}
+
+    for column, column_rules in rules.items():
+
+        if "allowed_values" not in column_rules:
+            continue
+
+        if column not in df.columns:
+            continue
+
+        allowed_values = column_rules["allowed_values"]
+
+        invalid_mask = ~df[column].isin(allowed_values)
+
+        invalid_count = int(invalid_mask.sum())
+
+        allowed_values_results[column] = {
+            "allowed_values": allowed_values,
+            "invalid_count": invalid_count,
+            "status": "FAIL" if invalid_count > 0 else "PASS"
+        }
+
+    results["allowed_values_validation"] = allowed_values_results
 
     # 4. Format Validation
 
@@ -71,11 +148,12 @@ def validate_dataset(df):
 
     for column in df.columns:
 
-        column_lower = column.lower()
+        column_rules = rules.get(column, {})
+
+        data_type = column_rules.get("type")
 
         # Email validation
-
-        if "email" in column_lower:
+        if data_type == "email":
 
             email_pattern = r"^[\w\.-]+@[\w\.-]+\.\w+$"
 
@@ -95,11 +173,7 @@ def validate_dataset(df):
             }
 
         # Date validation
-
-        elif any(
-            keyword in column_lower
-            for keyword in ["date", "time", "timestamp"]
-        ):
+        elif data_type == "date":
 
             converted_values = pd.to_datetime(
                 df[column],
@@ -119,16 +193,38 @@ def validate_dataset(df):
 
     # 5. Schema Validation
 
+    schema_rules = config.get("schema", {})
+
+    required_columns = schema_rules.get(
+        "required_columns",
+        []
+    )
+
     actual_columns = list(df.columns)
+
+    missing_columns = [
+        column
+        for column in required_columns
+        if column not in actual_columns
+    ]
+
+    unexpected_columns = [
+        column
+        for column in actual_columns
+        if column not in required_columns
+    ]
 
     schema_status = (
         "PASS"
-        if len(actual_columns) > 0
+        if not missing_columns and not unexpected_columns
         else "FAIL"
     )
 
     results["schema_validation"] = {
-        "columns": actual_columns,
+        "expected_columns": required_columns,
+        "actual_columns": actual_columns,
+        "missing_columns": missing_columns,
+        "unexpected_columns": unexpected_columns,
         "status": schema_status
     }
 
@@ -155,7 +251,14 @@ def validate_dataset(df):
         checks.append(
             result["status"] == "PASS"
         )
+    
+    # Allowed values checks
 
+    for result in results["allowed_values_validation"].values():
+        checks.append(
+            result["status"] == "PASS"
+        )
+    
     # Format checks
 
     for result in results["format_validation"].values():
@@ -270,7 +373,17 @@ if __name__ == "__main__":
             f"{result['invalid_count']} invalid → "
             f"{result['status']}"
         )
+    
+    print("\n===== ALLOWED VALUES VALIDATION =====")
 
+    for column, result in results["allowed_values_validation"].items():
+
+        print(
+            f"{column}: "
+            f"{result['invalid_count']} invalid → "
+            f"{result['status']}"
+        )
+    
     print("\n===== FORMAT VALIDATION =====")
 
     for column, result in results["format_validation"].items():
@@ -286,8 +399,23 @@ if __name__ == "__main__":
     schema = results["schema_validation"]
 
     print(
-        "Columns:",
-        schema["columns"]
+        "Expected columns:",
+        schema["expected_columns"]
+    )
+
+    print(
+        "Actual columns:",
+        schema["actual_columns"]
+    )
+
+    print(
+        "Missing columns:",
+        schema["missing_columns"]
+    )
+
+    print(
+        "Unexpected columns:",
+        schema["unexpected_columns"]
     )
 
     print(

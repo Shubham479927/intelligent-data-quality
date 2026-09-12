@@ -1,0 +1,50 @@
+schema:
+  required_columns:
+    - order_id
+    - customer_id
+    - order_date
+    - product_category
+    - quantity
+    - unit_price
+    - total_amount
+    - payment_method
+    - customer_age
+    - customer_email
+
+rules:
+  customer_age:
+    required: true
+    min: 18
+    max: 100
+
+  quantity:
+    required: true
+    min: 1
+
+  unit_price:
+    required: true
+    min: 0
+
+  total_amount:
+    required: true
+    min: 0
+
+  customer_email:
+    required: true
+    type: email
+
+  order_date:
+    required: true
+    type: date
+
+  payment_method:
+    required: true
+    allowed_values:
+      - Credit Card
+      - Debit Card
+      - UPI
+      - Cash
+      - Net Banking
+
+duplicate_check:
+  allowed: false
