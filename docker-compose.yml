@@ -7,6 +7,11 @@ services:
       - .env
     ports:
       - "8501:8501"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8501/_stcore/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     depends_on:
       airflow:
         condition: service_started
