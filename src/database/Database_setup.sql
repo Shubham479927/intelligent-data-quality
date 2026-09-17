@@ -78,7 +78,7 @@ CREATE USER 'powerbi_user'@'localhost'
 IDENTIFIED WITH mysql_native_password
 BY '9927';
 
-GRANT SELECT ON intelligent_data_quality.* 
+GRANT SELECT ON intelligent_data_quality.*
 TO 'powerbi_user'@'localhost';
 
 FLUSH PRIVILEGES;
@@ -100,7 +100,7 @@ TO 'powerbi_user'@'127.0.0.1';
 
 CREATE USER 'metabase_user'@'localhost' IDENTIFIED BY '9927';
 
-GRANT SELECT ON intelligent_data_quality.* 
+GRANT SELECT ON intelligent_data_quality.*
 TO 'metabase_user'@'localhost';
 
 ALTER USER 'metabase_user'@'localhost'
@@ -167,4 +167,38 @@ SELECT anomaly_status, COUNT(*) AS count
 FROM anomaly_results
 GROUP BY anomaly_status;
 
+USE intelligent_data_quality;
+
+DELETE FROM orders
+WHERE order_id = 999999;
+
+SELECT *
+FROM orders
+WHERE order_id = 999999;
+
+SELECT *
+FROM pipeline_metrics
+ORDER BY id DESC
+LIMIT 5;
+
+
+CREATE TABLE pipeline_runs (
+    run_id INT AUTO_INCREMENT PRIMARY KEY,
+    start_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    end_time TIMESTAMP NULL,
+    status VARCHAR(20),
+    original_rows INT,
+    cleaned_rows INT,
+    quarantined_rows INT,
+    duplicates_removed INT,
+    anomaly_count INT,
+    quality_score DECIMAL(5,2),
+    error_message TEXT
+);
+
+
+SELECT *
+FROM pipeline_runs
+ORDER BY run_id DESC
+LIMIT 5;
 

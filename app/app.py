@@ -13,6 +13,7 @@ from src.anomaly_detection.anomaly_detector import (
     train_model,
     detect_anomalies,
     calculate_anomaly_scores,
+    calculate_feature_unusualness
 )
 from src.database.load_anomaly_results import load_anomaly_results
 from src.database.load_data import load_data as load_database_data
@@ -57,7 +58,7 @@ if uploaded_file is not None:
 
     col1.metric("Rows", df.shape[0])
     col2.metric("Columns", df.shape[1])
-    
+
 
     missing_values = df.isnull().sum()
 
@@ -78,11 +79,11 @@ if uploaded_file is not None:
         "Data Quality Score",
         f"{quality_score:.1f}%"
     )
-    
+
     st.progress(
         quality_score / 100
     )
-    
+
     st.subheader("Validation Checks")
 
     validation_sections = [
@@ -118,7 +119,7 @@ if uploaded_file is not None:
                             st.success(f"✅ {check_name}")
                         else:
                             st.error(f"❌ {check_name}")
-    
+
     st.subheader("Cleaning Results")
 
     cleaned_df, quarantined_df, duplicates_removed = clean_dataset(df)
@@ -137,11 +138,11 @@ if uploaded_file is not None:
         "Quarantined Records",
         quarantined_rows
     )
-    
+
     st.subheader("Cleaned Data Preview")
 
     st.dataframe(cleaned_df.head(10))
-    
+
     csv_data = cleaned_df.to_csv(index=False).encode("utf-8")
 
     st.download_button(
@@ -150,7 +151,7 @@ if uploaded_file is not None:
         file_name="cleaned_data.csv",
         mime="text/csv"
     )
-    
+
     st.subheader("Anomaly Detection")
 
     try:
@@ -170,7 +171,9 @@ if uploaded_file is not None:
     predictions = detect_anomalies(model, X)
 
     scores = calculate_anomaly_scores(model, X)
-    
+
+    feature_scores = calculate_feature_unusualness(X)
+
     results_df = cleaned_df.copy()
 
     results_df["anomaly_prediction"] = predictions
@@ -180,10 +183,41 @@ if uploaded_file is not None:
         1: "Normal",
         -1: "Anomaly"
     })
-    
+
+    for column in feature_scores.columns:
+        results_df[f"{column}_unusualness"] = feature_scores[column]
+
+    results_df["top_unusual_feature"] = feature_scores.idxmax(axis=1)
+    results_df["top_unusualness_score"] = feature_scores.max(axis=1)
+
+    def explain_anomaly(row):
+
+        if row["anomaly_status"] != "Anomaly":
+            return "No significant anomaly detected"
+
+        feature = row["top_unusual_feature"]
+        value = row[feature]
+        median = X[feature].median()
+
+        if value > median:
+            direction = "high"
+        else:
+            direction = "low"
+
+        return (
+            f"{feature} = {value:.2f} is unusually {direction} "
+            f"(median = {median:.2f})"
+        )
+
+
+    results_df["anomaly_explanation"] = results_df.apply(
+        explain_anomaly,
+        axis=1
+    )
+
     normal_count = sum(predictions == 1)
     anomaly_count = sum(predictions == -1)
-    
+
     anomaly_percentage = (
         anomaly_count / len(results_df)
     ) * 100
@@ -192,7 +226,7 @@ if uploaded_file is not None:
         "data/anomaly_results.csv",
         index=False
     )
-    
+
     if "order_id" in results_df.columns:
 
         load_database_data()
@@ -206,8 +240,8 @@ if uploaded_file is not None:
         )
 
     st.success("✅ Anomaly detection completed successfully!")
-    
-    
+
+
     col1, col2, col3 = st.columns(3)
 
     col1.metric(
@@ -224,7 +258,7 @@ if uploaded_file is not None:
         "Anomaly Rate",
         f"{anomaly_percentage:.2f}%"
     )
-    
+
     st.subheader("📊 Pipeline Overview")
 
     total_records = len(df)
@@ -258,8 +292,22 @@ if uploaded_file is not None:
         results_df["anomaly_status"] == "Anomaly"
     ]
 
-    st.dataframe(anomaly_df)
-    
+    display_columns = [
+        column for column in [
+            "order_id",
+            "anomaly_score",
+            "top_unusual_feature",
+            "top_unusualness_score",
+            "anomaly_explanation"
+        ]
+        if column in anomaly_df.columns
+    ]
+
+    st.dataframe(
+        anomaly_df[display_columns],
+        use_container_width=True
+    )
+
     anomaly_csv = results_df.to_csv(index=False).encode("utf-8")
 
     st.download_button(
@@ -268,13 +316,13 @@ if uploaded_file is not None:
         file_name="anomaly_results.csv",
         mime="text/csv"
     )
-    
+
     st.subheader("Anomaly Distribution")
 
     anomaly_distribution = results_df["anomaly_status"].value_counts()
 
     st.bar_chart(anomaly_distribution)
-    
+
     st.subheader("Most Unusual Records")
 
     most_unusual = results_df.sort_values(
@@ -282,7 +330,7 @@ if uploaded_file is not None:
     ).head(10)
 
     st.dataframe(most_unusual)
-    
+
     st.divider()
 
     st.success("✅ Data analysis pipeline completed successfully!")

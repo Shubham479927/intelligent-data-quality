@@ -98,7 +98,26 @@ def calculate_anomaly_scores(model, X):
 
     return scores
 
-def save_results(df, predictions, scores):
+def calculate_feature_unusualness(X):
+
+    feature_scores = pd.DataFrame(index=X.index)
+
+    for column in X.columns:
+        median = X[column].median()
+        mad = (X[column] - median).abs().median()
+
+        if mad == 0:
+            feature_scores[column] = 0
+        else:
+            feature_scores[column] = (
+                (X[column] - median).abs() / mad
+            )
+
+    print("\nFeature unusualness calculated!")
+
+    return feature_scores
+
+def save_results(df, X, predictions, scores):
 
     results_df = df.copy()
 
@@ -109,6 +128,38 @@ def save_results(df, predictions, scores):
         1: "Normal",
         -1: "Anomaly"
     })
+
+    feature_scores = calculate_feature_unusualness(X)
+
+    for column in feature_scores.columns:
+        results_df[f"{column}_unusualness"] = feature_scores[column]
+
+    results_df["top_unusual_feature"] = feature_scores.idxmax(axis=1)
+    results_df["top_unusualness_score"] = feature_scores.max(axis=1)
+    def explain_anomaly(row):
+
+        if row["anomaly_status"] != "Anomaly":
+            return "No significant anomaly detected"
+
+        feature = row["top_unusual_feature"]
+        value = row[feature]
+        median = X[feature].median()
+
+        if value > median:
+            direction = "high"
+        else:
+            direction = "low"
+
+        return (
+            f"{feature} = {value:.2f} is unusually {direction} "
+            f"(median = {median:.2f})"
+        )
+
+
+    results_df["anomaly_explanation"] = results_df.apply(
+        explain_anomaly,
+        axis=1
+    )
 
     output_path = "data/anomaly_results.csv"
 
@@ -136,4 +187,4 @@ if __name__ == "__main__":
 
     scores = calculate_anomaly_scores(model, X)
 
-    results_df = save_results(df, predictions, scores)
+    results_df = save_results(df, X, predictions, scores)

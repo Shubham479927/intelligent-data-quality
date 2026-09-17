@@ -11,3 +11,4 @@ data/quarantine/*
 data/anomaly_results.csv
 data/cleaning_report.json
 data/validation_report.json
+simple_auth_manager_passwords.json

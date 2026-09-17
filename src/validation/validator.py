@@ -115,7 +115,7 @@ def validate_dataset(df):
         }
 
     results["range_validation"] = range_results
-    
+
     # 3.5 Allowed Values Validation
 
     allowed_values_results = {}
@@ -251,14 +251,14 @@ def validate_dataset(df):
         checks.append(
             result["status"] == "PASS"
         )
-    
+
     # Allowed values checks
 
     for result in results["allowed_values_validation"].values():
         checks.append(
             result["status"] == "PASS"
         )
-    
+
     # Format checks
 
     for result in results["format_validation"].values():
@@ -373,7 +373,7 @@ if __name__ == "__main__":
             f"{result['invalid_count']} invalid → "
             f"{result['status']}"
         )
-    
+
     print("\n===== ALLOWED VALUES VALIDATION =====")
 
     for column, result in results["allowed_values_validation"].items():
@@ -383,7 +383,7 @@ if __name__ == "__main__":
             f"{result['invalid_count']} invalid → "
             f"{result['status']}"
         )
-    
+
     print("\n===== FORMAT VALIDATION =====")
 
     for column, result in results["format_validation"].items():

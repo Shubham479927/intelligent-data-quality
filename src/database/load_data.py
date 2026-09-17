@@ -13,35 +13,35 @@ def load_data(
     primary_key="order_id",
     file_path="data/processed/cleaned_data.csv"
 ):
-    
+
     table_name = validate_identifier(table_name)
     primary_key = validate_identifier(primary_key)
-    
+
     if not table_name:
         raise ValueError("Table name cannot be empty.")
 
     if not primary_key:
         raise ValueError("Primary key cannot be empty.")
-    
+
     df = pd.read_csv(file_path)
 
     if primary_key not in df.columns:
         raise ValueError(
             f"Primary key '{primary_key}' not found in dataset."
         )
-    
+
     if df[primary_key].isna().any():
         raise ValueError(
             f"Primary key '{primary_key}' contains missing values."
         )
-        
+
     if df[primary_key].duplicated().any():
         raise ValueError(
             f"Primary key '{primary_key}' contains duplicate values."
         )
 
     engine = get_engine()
-    
+
     inspector = inspect(engine)
 
     if not inspector.has_table(table_name):
@@ -50,9 +50,9 @@ def load_data(
         )
 
     # Get existing primary keys from database
-    
+
     with engine.connect() as connection:
-        
+
         result = connection.execute(
             text(f"SELECT `{primary_key}` FROM `{table_name}`")
         )

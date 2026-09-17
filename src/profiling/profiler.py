@@ -62,7 +62,7 @@ import sys
 
 if __name__ == "__main__":
 
-   
+
     if len(sys.argv) > 1:
         file_path = sys.argv[1]
     else:
@@ -113,7 +113,7 @@ if __name__ == "__main__":
                 for value, count in column["top_values"].items():
 
                     print(f"      {value}: {count}")
-            
+
                     # Save profiling results
         output_path = Path("data/profiling_report.json")
 

@@ -38,6 +38,8 @@ services:
       - ./src:/opt/airflow/src
       - ./data:/opt/airflow/data
       - ./.env:/opt/airflow/.env
+      - ./config:/opt/airflow/config
+      - ./simple_auth_manager_passwords.json:/opt/airflow/simple_auth_manager_passwords.json.generated
     ports:
       - "8080:8080"
     command: standalone
