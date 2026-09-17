@@ -8,7 +8,8 @@ services:
     ports:
       - "8501:8501"
     depends_on:
-      - airflow
+      airflow:
+        condition: service_started
 
   postgres:
     image: postgres:16
